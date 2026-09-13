@@ -1,8 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import TipsFeed from './TipsFeed';
 import CodeBlock from './CodeBlock';
 import ProgressBar from './ProgressBar';
+import StreakDisplay from './StreakDisplay';
+import Celebration from './Celebration';
 import { getWeeklyProgress, recordAnsweredToday } from '../lib/streak';
 import { playTone, triggerHaptic } from '../lib/feedback';
 import { buildMarkdown, copyToClipboard } from '../lib/exportMarkdown';
@@ -58,6 +61,7 @@ function ChallengeSkeleton() {
 }
 
 export default function CodeBitsDaily() {
+  const router = useRouter();
   const [track, setTrack] = useState('python');
   const [question, setQuestion] = useState(null);
   const [tip, setTip] = useState(null);
@@ -69,6 +73,12 @@ export default function CodeBitsDaily() {
   const [verifying, setVerifying] = useState(false);
   const [progress, setProgress] = useState({ answered: 0, total: 7 });
   const [copyState, setCopyState] = useState('idle'); // idle | copied
+  
+  // User and streak state
+  const [user, setUser] = useState(null);
+  const [userStats, setUserStats] = useState(null);
+  const [streakData, setStreakData] = useState(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const pythonTabRef = useRef(null);
   const nodeTabRef = useRef(null);
@@ -76,6 +86,24 @@ export default function CodeBitsDaily() {
 
   const date = useMemo(() => todayUTC(), []);
   const hasAnswered = Boolean(result);
+
+  // Check user session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+          setUserStats(data.stats);
+        }
+      } catch (err) {
+        console.log('Not authenticated');
+      }
+    };
+
+    checkSession();
+  }, []);
 
   useEffect(() => {
     setProgress(getWeeklyProgress());
@@ -156,11 +184,25 @@ export default function CodeBitsDaily() {
       const res = await fetch('/api/verify-answer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question_id: question.id, selected_index: index }),
+        body: JSON.stringify({ 
+          question_id: question.id, 
+          selected_index: index,
+          language: track,
+        }),
       });
       if (!res.ok) throw new Error('Could not verify answer');
       const data = await res.json();
       setResult(data);
+      
+      // Update streak data if available
+      if (data.streak) {
+        setStreakData(data.streak);
+        if (data.correct && data.streak.streakIncremented) {
+          setShowCelebration(true);
+          setTimeout(() => setShowCelebration(false), 2500);
+        }
+      }
+      
       window.localStorage.setItem(
         storageKey(date, track),
         JSON.stringify({
@@ -200,6 +242,11 @@ export default function CodeBitsDaily() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-300 font-sans selection:bg-emerald-900/50">
+      <Celebration 
+        trigger={showCelebration} 
+        streakIncremented={streakData?.streakIncremented}
+        questionsAnswered={streakData?.questionsAnsweredToday}
+      />
       <ProgressBar progress={progress} />
 
       {/* Header */}
@@ -248,6 +295,32 @@ export default function CodeBitsDaily() {
                 Node.js
               </button>
             </div>
+
+            {/* User Menu */}
+            {user ? (
+              <div className="flex items-center gap-3 ml-4 pl-4 border-l border-zinc-800">
+                <span className="text-sm text-zinc-400">{user.username}</span>
+                <button
+                  onClick={async () => {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                    setUser(null);
+                    router.push('/login');
+                  }}
+                  className="text-sm px-3 py-1.5 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 ml-4 pl-4 border-l border-zinc-800">
+                <Link href="/login" className="text-sm px-3 py-1.5 rounded-md hover:bg-zinc-800 transition-colors">
+                  Login
+                </Link>
+                <Link href="/signup" className="text-sm px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-700 transition-colors">
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -272,6 +345,16 @@ export default function CodeBitsDaily() {
 
           {!loading && question && (
             <>
+              {/* Streak Display for logged-in users */}
+              {user && streakData && (
+                <StreakDisplay
+                  currentStreak={streakData.currentStreak}
+                  bestStreak={streakData.bestStreak}
+                  questionsToday={streakData.questionsAnsweredToday}
+                  totalQuestions={4}
+                />
+              )}
+
               {/* Challenge Card */}
               <div
                 key={question.id}
