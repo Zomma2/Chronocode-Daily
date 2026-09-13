@@ -18,11 +18,10 @@ async function handler(req, res) {
 
       // Set session
       req.session.user = user;
-      await req.session.save();
 
       return res.status(200).json({
         message: 'Logged in successfully',
-        user: req.session.user,
+        user,
       });
     } catch (error) {
       console.error('Login error:', error);

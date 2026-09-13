@@ -10,26 +10,29 @@ export default function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const track = req.query.track === 'node' ? 'node' : 'python';
-  const date = todayUTC();
+  const validTracks = ['javascript', 'python', 'node'];
+  const track = validTracks.includes(req.query.track) ? req.query.track : 'python';
 
-  const row = db
-    .prepare(
-      'SELECT id, track, question_text, code_snippet, options, scheduled_date FROM questions WHERE track = ? AND scheduled_date = ?'
-    )
-    .get(track, date);
+  // Get 4 random questions for the language
+  const questions = db.getRandomQuestions(track, 4);
 
-  if (!row) {
-    return res.status(404).json({ error: 'No challenge scheduled for today' });
+  if (!questions || questions.length === 0) {
+    return res.status(404).json({ error: 'No challenges available for this language' });
   }
 
-  // correct_index and explanation are intentionally withheld until /api/verify-answer.
+  // Return questions without revealing correct answers
+  const challenge = questions.map(q => ({
+    id: q.id,
+    track: q.track,
+    question_text: q.question_text,
+    code_snippet: q.code_snippet,
+    options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+  }));
+
   return res.status(200).json({
-    id: row.id,
-    track: row.track,
-    question_text: row.question_text,
-    code_snippet: row.code_snippet,
-    options: JSON.parse(row.options),
-    scheduled_date: row.scheduled_date,
+    track,
+    questions: challenge,
+    totalQuestions: challenge.length,
+    message: 'Answer all 4 questions correctly to increment your daily streak!',
   });
 }

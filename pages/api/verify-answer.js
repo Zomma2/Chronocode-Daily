@@ -1,4 +1,4 @@
-import db from '../../lib/db';
+import { getQuestionById } from '../../lib/db';
 import { withSessionRoute } from '../../lib/session';
 import { updateLanguageStreak, getLanguageStreak } from '../../lib/auth';
 
@@ -18,27 +18,25 @@ async function handler(req, res) {
     return res.status(400).json({ error: 'selected_index must be between 0 and 3' });
   }
 
-  const row = db
-    .prepare('SELECT correct_index, explanation FROM questions WHERE id = ?')
-    .get(question_id);
+  const question = getQuestionById(question_id);
 
-  if (!row) {
+  if (!question) {
     return res.status(404).json({ error: 'Question not found' });
   }
 
-  const isCorrect = selected_index === row.correct_index;
+  const isCorrect = selected_index === question.correct_index;
 
   // Track streak if user is logged in
   let streakData = null;
-  if (req.session.user) {
+  if (req.session?.user) {
     const userLanguage = language || 'unknown';
     streakData = updateLanguageStreak(req.session.user.id, userLanguage, isCorrect);
   }
 
   return res.status(200).json({
     correct: isCorrect,
-    explanation: row.explanation,
-    correct_index: row.correct_index,
+    explanation: question.explanation,
+    correct_index: question.correct_index,
     ...(streakData && {
       streak: {
         questionsAnsweredToday: streakData.questionsAnsweredToday,

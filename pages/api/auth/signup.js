@@ -42,7 +42,6 @@ async function handler(req, res) {
         email: user.email,
         username: user.username,
       };
-      await req.session.save();
 
       return res.status(201).json({
         message: 'Account created successfully',

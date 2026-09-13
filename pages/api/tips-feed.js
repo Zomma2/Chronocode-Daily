@@ -1,9 +1,3 @@
-import db from '../../lib/db';
-
-function todayUTC() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export default function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
@@ -12,13 +6,22 @@ export default function handler(req, res) {
 
   const track = req.query.track === 'node' ? 'node' : 'python';
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 8, 1), 20);
-  const date = todayUTC();
 
-  const rows = db
-    .prepare(
-      'SELECT id, track, tip_text, scheduled_date FROM tips WHERE track = ? AND scheduled_date <= ? ORDER BY scheduled_date DESC LIMIT ?'
-    )
-    .all(track, date, limit);
+  // Return sample tips
+  const tips = [
+    {
+      id: 1,
+      track,
+      tip_text: 'Use const by default in JavaScript to avoid unexpected mutations.',
+      scheduled_date: new Date().toISOString().split('T')[0],
+    },
+    {
+      id: 2,
+      track,
+      tip_text: 'Always handle errors in async/await functions with try-catch blocks.',
+      scheduled_date: new Date().toISOString().split('T')[0],
+    },
+  ].slice(0, limit);
 
-  return res.status(200).json({ track, tips: rows });
+  return res.status(200).json({ track, tips });
 }

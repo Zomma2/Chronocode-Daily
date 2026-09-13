@@ -1,4 +1,4 @@
-import db from '../../../lib/db';
+import { getPostBySlug } from '../../../lib/db';
 
 export default function handler(req, res) {
   if (req.method !== 'GET') {
@@ -12,11 +12,11 @@ export default function handler(req, res) {
     return res.status(400).json({ error: 'slug is required' });
   }
 
-  const row = db.prepare('SELECT * FROM posts WHERE slug = ?').get(slug);
+  const post = getPostBySlug(slug);
 
-  if (!row) {
+  if (!post) {
     return res.status(404).json({ error: 'Post not found' });
   }
 
-  return res.status(200).json(row);
+  return res.status(200).json(post);
 }

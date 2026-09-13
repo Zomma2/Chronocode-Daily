@@ -1,4 +1,4 @@
-import db from '../../lib/db';
+import { getTip } from '../../lib/db';
 
 function todayUTC() {
   return new Date().toISOString().slice(0, 10);
@@ -13,13 +13,11 @@ export default function handler(req, res) {
   const track = req.query.track === 'node' ? 'node' : 'python';
   const date = todayUTC();
 
-  const row = db
-    .prepare('SELECT id, track, tip_text, scheduled_date FROM tips WHERE track = ? AND scheduled_date = ?')
-    .get(track, date);
+  const tip = getTip(track, date);
 
-  if (!row) {
+  if (!tip) {
     return res.status(404).json({ error: 'No tip scheduled for today' });
   }
 
-  return res.status(200).json(row);
+  return res.status(200).json(tip);
 }
