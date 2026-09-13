@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .skeleton {
+    background-image: linear-gradient(90deg, theme('colors.zinc.900') 0px, theme('colors.zinc.800') 40px, theme('colors.zinc.900') 80px);
+    background-size: 800px 100%;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.zinc.700');
+    border-radius: 9999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+}
