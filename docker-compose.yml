@@ -1,0 +1,10 @@
+services:
+  codebits:
+    build: .
+    ports:
+      - "4000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATABASE_DIR=/app/data
+    restart: unless-stopped
