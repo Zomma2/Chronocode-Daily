@@ -1,5 +1,5 @@
-import { withSessionRoute } from '@/lib/session';
-import { createUser, authenticateUser, getUserByEmail, getUserByUsername } from '@/lib/auth';
+import { withSessionRoute } from '../../../lib/session';
+import { createUser, authenticateUser, getUserByEmail, getUserByUsername } from '../../../lib/auth';
 
 async function handler(req, res) {
   if (req.method === 'POST') {

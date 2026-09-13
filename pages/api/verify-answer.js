@@ -1,6 +1,6 @@
 import db from '../../lib/db';
-import { withSessionRoute } from '@/lib/session';
-import { updateLanguageStreak, getLanguageStreak } from '@/lib/auth';
+import { withSessionRoute } from '../../lib/session';
+import { updateLanguageStreak, getLanguageStreak } from '../../lib/auth';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {

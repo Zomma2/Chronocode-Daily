@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Login from '@/components/Login';
+import Login from '../components/Login';
 
 export default function LoginPage() {
   const router = useRouter();
