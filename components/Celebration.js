@@ -1,109 +1,174 @@
-import { useEffect, useState } from 'react';
+'use client';
 
-export default function Celebration({ trigger, streakIncremented, questionsAnswered }) {
-  const [particles, setParticles] = useState([]);
+import React, { useEffect, useRef, useState } from 'react';
+import confetti from 'canvas-confetti';
+
+export default function Celebration({ trigger, streakIncremented, onComplete }) {
   const [show, setShow] = useState(false);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
-    if (trigger) {
-      setShow(true);
-      
-      // Generate particles for celebration
-      const newParticles = Array.from({ length: 30 }).map((_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 0.2,
-        duration: 2 + Math.random() * 1,
-      }));
-      
-      setParticles(newParticles);
-      
-      // Hide celebration after animation
-      const timer = setTimeout(() => {
-        setShow(false);
-      }, 2500);
-      
-      return () => clearTimeout(timer);
+    if (!trigger) {
+      setShow(false);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
     }
+
+    setShow(true);
+    fireConfetti();
+
+    const timer = setTimeout(() => {
+      setShow(false);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (onComplete) onComplete();
+    }, 3000);
+
+    return () => {
+      clearTimeout(timer);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [trigger]);
+
+  const fireConfetti = () => {
+    if (typeof window === 'undefined') return;
+
+    const duration = 2000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 28, spread: 360, ticks: 60, zIndex: 99999 };
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    intervalRef.current = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+        return;
+      }
+
+      const particleCount = Math.max(10, 35 * (timeLeft / duration));
+
+      confetti(
+        Object.assign({}, defaults, {
+          particleCount,
+          origin: { x: 0.5, y: 0.5 },
+          colors: ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'],
+        })
+      );
+
+      confetti(
+        Object.assign({}, defaults, {
+          particleCount: particleCount * 0.4,
+          origin: { x: 0.15, y: 0.5 },
+          spread: 100,
+          colors: ['#10b981', '#3b82f6', '#fbbf24'],
+        })
+      );
+
+      confetti(
+        Object.assign({}, defaults, {
+          particleCount: particleCount * 0.4,
+          origin: { x: 0.85, y: 0.5 },
+          spread: 100,
+          colors: ['#10b981', '#3b82f6', '#fbbf24'],
+        })
+      );
+    }, 250);
+  };
 
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {/* Confetti particles */}
-      {particles.map((particle) => (
-        <div
-          key={particle.id}
-          className="absolute w-2 h-2 bg-yellow-400 rounded-full animate-pulse"
-          style={{
-            left: `${particle.left}%`,
-            top: '-10px',
-            animation: `fall ${particle.duration}s linear forwards`,
-            animationDelay: `${particle.delay}s`,
-            boxShadow: '0 0 10px rgba(250, 204, 21, 0.8)',
-          }}
-        />
-      ))}
+    <>
+      {/* Glow backdrop */}
+      <div
+        className="fixed pointer-events-none"
+        style={{
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '26rem',
+          height: '26rem',
+          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(59, 130, 246, 0.1) 45%, transparent 70%)',
+          zIndex: 99998,
+          animation: 'celebration-glow 3s ease-out forwards',
+        }}
+      />
 
       {/* Center celebration message */}
       <div
-        className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
-          show ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
-        }`}
+        className="fixed pointer-events-none"
         style={{
-          animation: show ? 'bounce 0.6s ease-out' : 'none',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 99999,
+          animation: 'celebration-anim 3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         }}
       >
-        <div className="bg-gradient-to-r from-green-400 to-blue-500 text-white px-8 py-4 rounded-full shadow-2xl text-center">
-          <div className="text-4xl font-bold">✨ Correct! ✨</div>
-          <div className="text-lg mt-2">
-            {streakIncremented && '🎉 Streak increased! Keep it up!'}
-            {questionsAnswered % 4 === 0 && questionsAnswered > 0 && !streakIncremented && (
-              <span>Questions today: {questionsAnswered}/4</span>
-            )}
+        <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-600 text-white px-9 py-5 rounded-full shadow-2xl border border-emerald-400/30 text-center whitespace-nowrap">
+          <div className="text-3xl sm:text-4xl font-extrabold tracking-tight">Correct!</div>
+          <div className="text-sm sm:text-base font-medium text-emerald-100 mt-1">
+            {streakIncremented ? 'Streak increased!' : 'Great job!'}
           </div>
         </div>
       </div>
 
-      {/* Rainbow effect */}
-      <div
-        className="fixed top-0 left-0 w-full h-full pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at center, rgba(34, 197, 94, 0.1) 0%, transparent 70%)`,
-          animation: 'pulse 1s ease-out',
-        }}
-      />
-
-      <style jsx>{`
-        @keyframes fall {
-          to {
-            transform: translateY(100vh) rotate(360deg);
+      <style>{`
+        @keyframes celebration-anim {
+          0% {
+            transform: translate(-50%, -50%) scale(0.6);
             opacity: 0;
           }
-        }
-
-        @keyframes bounce {
-          0% {
-            transform: translate(-50%, -50%) scale(0);
+          15% {
+            transform: translate(-50%, -50%) scale(1.05);
+            opacity: 1;
           }
-          50% {
-            transform: translate(-50%, -50%) scale(1.1);
-          }
-          100% {
+          25% {
             transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
           }
-        }
-
-        @keyframes pulse {
-          0% {
+          85% {
+            transform: translate(-50%, -50%) scale(1);
             opacity: 1;
           }
           100% {
+            transform: translate(-50%, -50%) scale(0.95);
             opacity: 0;
           }
         }
+
+        @keyframes celebration-glow {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.5);
+          }
+          20% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
+          85% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(1.3);
+          }
+        }
       `}</style>
-    </div>
+    </>
   );
 }

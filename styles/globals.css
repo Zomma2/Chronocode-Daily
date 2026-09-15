@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body {
+  background-color: #09090b;
+  color: #d4d4d8;
+  min-height: 100%;
+}
+
 @layer utilities {
   .skeleton {
     background-image: linear-gradient(90deg, theme('colors.zinc.900') 0px, theme('colors.zinc.800') 40px, theme('colors.zinc.900') 80px);
