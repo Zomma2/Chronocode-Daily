@@ -1,10 +1,29 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=codebits
+      - POSTGRES_PASSWORD=codebits
+      - POSTGRES_DB=codebits
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
   codebits:
     build: .
     ports:
       - "4000:3000"
+    depends_on:
+      - db
     volumes:
       - ./data:/app/data
     environment:
       - DATABASE_DIR=/app/data
+      # Always use the local Postgres container in Docker - never the Neon/Vercel DB.
+      - DATABASE_URL=postgresql://codebits:codebits@db:5432/codebits
+    env_file:
+      - .env.local
     restart: unless-stopped
+
+volumes:
+  pgdata:

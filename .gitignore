@@ -4,8 +4,9 @@ out
 data/*.db
 data/*.db-*
 .env*.local
+.env*
 npm-debug.log*
 .vercel
-.env*
-*.md
-!README.md
+*.log
+scripts/
+data/

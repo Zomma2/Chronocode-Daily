@@ -1,4 +1,5 @@
 .next
 .git
 data
+node_modules
 npm-debug.log*
