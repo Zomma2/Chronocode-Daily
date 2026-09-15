@@ -3,7 +3,7 @@ import { createUser, authenticateUser, getUserByEmail, getUserByUsername } from 
 
 async function handler(req, res) {
   if (req.method === 'POST') {
-    const { email, username, password, confirmPassword } = req.body;
+    const { email, username, password, confirmPassword, avatarConfig } = req.body;
 
     // Validation
     if (!email || !username || !password || !confirmPassword) {
@@ -34,13 +34,15 @@ async function handler(req, res) {
     }
 
     try {
-      const user = await createUser(email, username, password);
+      const user = await createUser(email, username, password, avatarConfig || { sex: 'man' });
       
       // Set session
       req.session.user = {
         id: user.id,
         email: user.email,
         username: user.username,
+        avatar_config: user.avatar_config || { sex: 'man' },
+        avatar_visible: true,
       };
 
       return res.status(201).json({

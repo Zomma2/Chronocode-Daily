@@ -1,13 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import CodeBlock from '../components/CodeBlock';
 
 export default function HistoryPage() {
+  const router = useRouter();
   const [track, setTrack] = useState('python');
   const [questions, setQuestions] = useState(null);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (!response.ok) {
+          router.push('/login?redirect=history');
+          return;
+        }
+        setIsAuthenticated(true);
+      } catch (err) {
+        router.push('/login?redirect=history');
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     let cancelled = false;
     setQuestions(null);
     setError(null);
@@ -27,7 +49,7 @@ export default function HistoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [track]);
+  }, [track, isAuthenticated]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-300 font-sans">
@@ -83,10 +105,14 @@ export default function HistoryPage() {
               {q.code_snippet && <CodeBlock code={q.code_snippet} track={q.track} className="mb-4" />}
               <ol className="space-y-1 mb-4 text-sm font-mono">
                 {q.options.map((opt, idx) => (
-                  <li key={idx} className={idx === q.correct_index ? 'text-emerald-400' : 'text-zinc-500'}>
+                  <li key={idx} className={`flex items-center gap-2 ${idx === q.correct_index ? 'text-emerald-400' : 'text-zinc-500'}`}>
                     <span className="mr-2">{['A', 'B', 'C', 'D'][idx]}</span>
-                    {opt}
-                    {idx === q.correct_index ? ' ✓' : ''}
+                    <span>{opt}</span>
+                    {idx === q.correct_index && (
+                      <span className="ml-1 text-[11px] font-mono px-1.5 py-0.2 rounded bg-emerald-950/60 border border-emerald-800/50 text-emerald-400">
+                        Correct
+                      </span>
+                    )}
                   </li>
                 ))}
               </ol>

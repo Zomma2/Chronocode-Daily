@@ -1,0 +1,19 @@
+import db from '../../../lib/db';
+import { withSessionRoute } from '../../../lib/session';
+
+export default withSessionRoute(async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const user = req.session.user;
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { questionId, voteType } = req.body;
+  if (!questionId || !voteType) return res.status(400).json({ error: 'Missing parameters' });
+
+  try {
+    await db.voteQuestion(user.id, questionId, voteType);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});

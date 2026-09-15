@@ -1,5 +1,5 @@
 import { withSessionRoute } from '../../../lib/session';
-import { getUserStats } from '../../../lib/auth';
+import { getUserStats, getUserById } from '../../../lib/auth';
 
 async function handler(req, res) {
   if (req.method === 'GET') {
@@ -8,7 +8,10 @@ async function handler(req, res) {
     }
 
     try {
-      const stats = getUserStats(req.session.user.id);
+      const stats = await getUserStats(req.session.user.id);
+      const fullUser = await getUserById(req.session.user.id);
+      req.session.user = { ...req.session.user, role: fullUser?.role };
+      await req.session.save();
       return res.status(200).json({
         user: req.session.user,
         stats,
